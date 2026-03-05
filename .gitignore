@@ -1,10 +1,52 @@
-# v0 runtime files (should only exist in preview, not in git)
+# Runtime/editor artifacts
 __v0_runtime_loader.js
 __v0_devtools.tsx
 __v0_jsx-dev-runtime.ts
-
-# Common ignores
-node_modules/
-.next/
-.env*.local
 .DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.tmp
+*.bak
+
+# Dependencies and build output
+node_modules/
+dist/
+build/
+.next/
+.vite/
+.cache/
+coverage/
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*
+!.env.example
+
+# Local databases / storage artifacts
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.mdb
+*.ldb
+
+# Local uploads / generated storage
+uploads/
+storage/
+tmp/
+temp/

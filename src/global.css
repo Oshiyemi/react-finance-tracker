@@ -1,0 +1,70 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap");
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: "Manrope", "Segoe UI", sans-serif;
+  --font-display: "Fraunces", Georgia, serif;
+}
+
+@layer base {
+  html {
+    min-height: 100%;
+  }
+
+  body {
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at top, rgba(16, 185, 129, 0.16), transparent 34%),
+      radial-gradient(circle at bottom right, rgba(245, 158, 11, 0.18), transparent 28%),
+      #f6fbf7;
+    color: #0f172a;
+    font-family: var(--font-sans);
+    text-rendering: optimizeLegibility;
+  }
+
+  body.dark,
+  .dark body {
+    background:
+      radial-gradient(circle at top, rgba(16, 185, 129, 0.08), transparent 34%),
+      radial-gradient(circle at bottom right, rgba(245, 158, 11, 0.08), transparent 28%),
+      #020617;
+    color: #f8fafc;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+  }
+
+  .lucide {
+    flex-shrink: 0;
+    vertical-align: middle;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(16, 185, 129, 0.45) transparent;
+  }
+
+  ::selection {
+    background: rgba(16, 185, 129, 0.25);
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+}
+
+@layer components {
+  .surface-card {
+    @apply rounded-[2rem] border border-white/50 bg-white/70 shadow-xl shadow-emerald-900/5 backdrop-blur-xl transition duration-200 dark:border-white/10 dark:bg-slate-950/70 dark:shadow-slate-950/20;
+  }
+
+  .field-shell {
+    @apply w-full rounded-2xl border border-emerald-200/80 bg-white/90 px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 dark:border-emerald-900/70 dark:bg-slate-950/80 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-emerald-700 dark:focus:ring-emerald-950/70;
+  }
+}
