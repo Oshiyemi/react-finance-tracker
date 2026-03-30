@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import {
   Landmark,
   PiggyBank,
@@ -11,6 +11,7 @@ import ExpenseTrendChart from "@/components/charts/ExpenseTrendChart";
 import Loader from "@/components/common/Loader";
 import MetricCard from "@/components/common/MetricCard";
 import PageHeader from "@/components/common/PageHeader";
+import StatusBanner from "@/components/common/StatusBanner";
 import { useAppStore } from "@/state/useAppStore";
 import {
   calculateTotals,
@@ -38,14 +39,15 @@ export default function Analytics() {
   const monthLabel = formatMonthLabel(selectedMonth);
 
   return (
-    <div className="space-y-8">
+    <div className="page-stack">
       <PageHeader
-        eyebrow="Monthly review"
-        title="Analytics"
-        description="Review the last 12 months, compare income against expenses, and spot your top spending category."
+        eyebrow="Analytics"
+        title="Monthly insights"
+        description="Review totals, category mix, and six-month trends."
         actions={
           <select
-            className="field-shell h-11 min-w-[12rem]"
+            aria-label="Select month"
+            className="field-shell h-10 min-w-[12rem]"
             value={selectedMonth}
             onChange={(event) => setSelectedMonth(event.target.value)}
           >
@@ -58,51 +60,59 @@ export default function Analytics() {
         }
       />
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+      {monthTransactions.length === 0 ? (
+        <StatusBanner tone="warning" title="No transactions in this month">
+          Add transactions for {monthLabel} to unlock complete analytics.
+        </StatusBanner>
+      ) : null}
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <MetricCard
           icon={TrendingUp}
-          label="Total income"
+          label="Income"
           tone="emerald"
           value={formatCurrency(totals.income)}
-          change={`Income recorded in ${monthLabel}.`}
+          change={monthLabel}
         />
         <MetricCard
           icon={TrendingDown}
-          label="Total expenses"
+          label="Expenses"
           tone="rose"
           value={formatCurrency(totals.expenses)}
-          change={`Expenses recorded in ${monthLabel}.`}
+          change={monthLabel}
         />
         <MetricCard
           icon={PiggyBank}
           label="Savings"
           tone="amber"
           value={formatCurrency(totals.savings)}
-          change="Income minus expenses for the selected month."
+          change="Income minus expenses"
         />
         <MetricCard
           icon={Landmark}
           label="Savings rate"
           tone="slate"
           value={formatPercent(savingsRate)}
-          change="Safe at 0% when there is no income in the selected month."
+          change="0% if no income"
         />
         <MetricCard
           icon={PieChartIcon}
-          label="Top spending category"
+          label="Top spend category"
           tone="amber"
           value={topCategory.category}
           change={formatCurrency(topCategory.amount)}
         />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_1.1fr]">
+      <div className="grid gap-5 xl:grid-cols-[1fr_1.1fr]">
         <CategoryBreakdownChart
           data={getCategoryBreakdown(monthTransactions)}
           monthLabel={monthLabel}
+          title="Category breakdown"
         />
         <ExpenseTrendChart data={getExpenseTrend(transactions, selectedMonth)} />
       </div>
     </div>
   );
 }
+

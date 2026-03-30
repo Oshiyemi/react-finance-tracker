@@ -61,12 +61,13 @@ export default function BudgetForm({
   }
 
   return (
-    <form className="space-y-5" onSubmit={handleSubmit}>
-      <div className="grid gap-5 md:grid-cols-2">
+    <form className="space-y-4" onSubmit={handleSubmit} noValidate>
+      <div className="grid gap-4 md:grid-cols-2">
         <Input
           id="budget-month"
           label="Month"
           type="month"
+          required
           disabled={disabled}
           value={values.month}
           error={errors.month}
@@ -77,6 +78,7 @@ export default function BudgetForm({
           id="budget-limit"
           label="Monthly limit"
           type="number"
+          required
           disabled={disabled}
           min="0"
           step="0.01"
@@ -91,6 +93,7 @@ export default function BudgetForm({
         id="budget-category"
         as="select"
         label="Expense category"
+        required
         disabled={disabled}
         value={values.category}
         error={errors.category}
@@ -108,15 +111,19 @@ export default function BudgetForm({
         id="budget-notes"
         as="textarea"
         label="Notes"
+        optionalLabel="optional"
         disabled={disabled}
-        rows={4}
+        rows={3}
+        maxLength={1000}
         placeholder="Optional note for your future self."
         value={values.notes}
         onChange={(event) => updateValue("notes", event.target.value)}
       />
 
       {errors.form ? (
-        <p className="text-sm text-rose-600 dark:text-rose-300">{errors.form}</p>
+        <p role="alert" className="text-sm text-rose-700 dark:text-rose-300">
+          {errors.form}
+        </p>
       ) : null}
 
       <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">

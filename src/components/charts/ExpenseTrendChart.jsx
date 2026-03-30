@@ -35,8 +35,8 @@ function TrendTooltip({ active, payload, label }) {
 export default function ExpenseTrendChart({ data }) {
   return (
     <Card className="h-full">
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold text-slate-950 dark:text-white">
+      <div className="mb-4">
+        <h2 className="text-lg font-semibold text-slate-950 dark:text-white sm:text-xl">
           Expense trend
         </h2>
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
@@ -45,7 +45,7 @@ export default function ExpenseTrendChart({ data }) {
       </div>
 
       {data.length === 0 ? (
-        <div className="flex h-[320px] items-center justify-center rounded-[1.75rem] border border-dashed border-emerald-200/80 bg-emerald-50/60 text-center dark:border-emerald-900/70 dark:bg-emerald-950/20">
+        <div className="flex h-[280px] items-center justify-center rounded-xl border border-dashed border-emerald-200/80 bg-emerald-50/60 text-center dark:border-emerald-900/70 dark:bg-emerald-950/20 sm:h-[320px]">
           <div className="space-y-2 px-6">
             <p className="text-sm font-semibold text-slate-950 dark:text-white">
               Not enough history yet
@@ -56,7 +56,11 @@ export default function ExpenseTrendChart({ data }) {
           </div>
         </div>
       ) : (
-        <div className="h-[320px]">
+        <div
+          role="img"
+          aria-label="Six-month expense and income trend chart"
+          className="h-[280px] sm:h-[320px]"
+        >
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={data} margin={{ left: -12, right: 12 }}>
               <CartesianGrid
@@ -71,7 +75,7 @@ export default function ExpenseTrendChart({ data }) {
                 tick={{ fill: "#64748b", fontSize: 12 }}
               />
               <YAxis
-                tickFormatter={(value) => `$${value}`}
+                tickFormatter={(value) => `$${Number(value).toLocaleString()}`}
                 tickLine={false}
                 axisLine={false}
                 tick={{ fill: "#64748b", fontSize: 12 }}

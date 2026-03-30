@@ -23,7 +23,7 @@ import {
   upsertGuestSessionRecord,
 } from "@/services/storage";
 import { GUEST_NAMESPACE } from "@/utils/constants";
-import { normalizeEmail } from "@/utils/validators";
+import { EMAIL_PATTERN, normalizeEmail, normalizeText } from "@/utils/validators";
 
 const PASSWORD_ALGORITHM = "pbkdf2-sha256";
 const PASSWORD_ITERATIONS = 210_000;
@@ -50,7 +50,31 @@ function hexToBytes(value) {
   }
 
   const parts = value.match(/.{1,2}/g) || [];
-  return new Uint8Array(parts.map((part) => Number.parseInt(part, 16)));
+  return new Uint8Array(
+    parts
+      .map((part) => Number.parseInt(part, 16))
+      .map((part) => (Number.isFinite(part) ? part : 0))
+  );
+}
+
+/**
+ * Constant-time-ish string compare for same-process checks.
+ * This does not replace server-side auth protections.
+ * @param {string} left
+ * @param {string} right
+ * @returns {boolean}
+ */
+function safeEqual(left, right) {
+  const a = String(left ?? "");
+  const b = String(right ?? "");
+  const length = Math.max(a.length, b.length);
+  let mismatch = a.length ^ b.length;
+
+  for (let index = 0; index < length; index += 1) {
+    mismatch |= (a.charCodeAt(index) || 0) ^ (b.charCodeAt(index) || 0);
+  }
+
+  return mismatch === 0;
 }
 
 /**
@@ -121,17 +145,18 @@ async function verifyAccountSecret(account, password) {
     );
 
     return {
-      matches: digest === account.password.digest,
+      matches: safeEqual(digest, account.password.digest),
       shouldUpgradeLegacy: false,
     };
   }
 
   if (typeof account?.passwordHash === "string") {
     const digest = await hashSecretLegacy(password);
+    const matches = safeEqual(digest, account.passwordHash);
 
     return {
-      matches: digest === account.passwordHash,
-      shouldUpgradeLegacy: digest === account.passwordHash,
+      matches,
+      shouldUpgradeLegacy: matches,
     };
   }
 
@@ -274,16 +299,20 @@ export function getGuestSessionStatus(session) {
  * @param {{ name: string, email: string, password: string }} payload
  */
 function assertRegisterPayload(payload) {
-  if (!payload?.name?.trim() || payload.name.trim().length < 2) {
+  const name = normalizeText(payload?.name, { maxLength: 80 });
+  const email = normalizeEmail(payload?.email);
+  const passwordLength = String(payload?.password ?? "").trim().length;
+
+  if (!name || name.length < 2) {
     throw new Error("Full name must be at least 2 characters.");
   }
 
-  if (!payload?.email?.trim() || !/^\S+@\S+\.\S+$/.test(payload.email.trim())) {
+  if (!email || !EMAIL_PATTERN.test(email)) {
     throw new Error("Enter a valid email address.");
   }
 
-  if (!payload?.password || payload.password.trim().length < 8) {
-    throw new Error("Password must be at least 8 characters.");
+  if (!passwordLength || passwordLength < 8 || passwordLength > 128) {
+    throw new Error("Password must be between 8 and 128 characters.");
   }
 }
 
@@ -291,12 +320,15 @@ function assertRegisterPayload(payload) {
  * @param {{ email: string, password: string }} payload
  */
 function assertLoginPayload(payload) {
-  if (!payload?.email?.trim() || !/^\S+@\S+\.\S+$/.test(payload.email.trim())) {
+  const email = normalizeEmail(payload?.email);
+  const passwordLength = String(payload?.password ?? "").trim().length;
+
+  if (!email || !EMAIL_PATTERN.test(email)) {
     throw new Error("Enter a valid email address.");
   }
 
-  if (!payload?.password || payload.password.trim().length < 8) {
-    throw new Error("Password must be at least 8 characters.");
+  if (!passwordLength || passwordLength < 8 || passwordLength > 128) {
+    throw new Error("Password must be between 8 and 128 characters.");
   }
 }
 
@@ -497,6 +529,7 @@ export async function registerAccount(payload) {
 
   const accounts = loadAccounts();
   const email = normalizeEmail(payload.email);
+  const name = normalizeText(payload.name, { maxLength: 80 });
 
   if (accounts.some((account) => account.email === email)) {
     throw new Error("An account with that email already exists.");
@@ -507,9 +540,9 @@ export async function registerAccount(payload) {
 
   const account = {
     id: crypto.randomUUID(),
-    name: payload.name.trim(),
+    name,
     email,
-    password: await createPasswordRecord(payload.password),
+    password: await createPasswordRecord(String(payload.password)),
     createdAt: new Date().toISOString(),
   };
 
@@ -569,6 +602,7 @@ export async function loginAccount(payload) {
 
   const accounts = loadAccounts();
   const email = normalizeEmail(payload.email);
+  const password = String(payload.password ?? "");
   const attemptStatus = canAttemptLogin(email);
 
   if (!attemptStatus.allowed) {
@@ -585,7 +619,7 @@ export async function loginAccount(payload) {
     throw new Error("Email or password is incorrect.");
   }
 
-  const verification = await verifyAccountSecret(account, payload.password);
+  const verification = await verifyAccountSecret(account, password);
 
   if (!verification.matches) {
     recordLoginFailure(email);
@@ -595,7 +629,7 @@ export async function loginAccount(payload) {
   clearLoginFailures(email);
 
   if (verification.shouldUpgradeLegacy) {
-    const upgradedPassword = await createPasswordRecord(payload.password);
+    const upgradedPassword = await createPasswordRecord(password);
     const nextAccounts = accounts.map((accountItem) =>
       accountItem.id === account.id
         ? {

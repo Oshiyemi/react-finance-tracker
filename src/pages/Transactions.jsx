@@ -1,14 +1,24 @@
-import { useState } from "react";
+﻿import { useMemo, useState } from "react";
+import { Eraser, Plus } from "lucide-react";
 import Button from "@/components/common/Button";
 import EmptyState from "@/components/common/EmptyState";
 import Loader from "@/components/common/Loader";
 import Modal from "@/components/common/Modal";
 import PageHeader from "@/components/common/PageHeader";
+import StatTile from "@/components/common/StatTile";
+import StatusBanner from "@/components/common/StatusBanner";
 import TransactionFilters from "@/components/transactions/TransactionFilters";
 import TransactionForm from "@/components/transactions/TransactionForm";
 import TransactionTable from "@/components/transactions/TransactionTable";
 import { useAppStore } from "@/state/useAppStore";
 import { getMonthKey } from "@/utils/finance";
+
+const DEFAULT_FILTERS = {
+  search: "",
+  type: "all",
+  category: "all",
+  month: "",
+};
 
 export default function Transactions() {
   const {
@@ -20,12 +30,7 @@ export default function Transactions() {
     transactions,
     updateTransaction,
   } = useAppStore();
-  const [filters, setFilters] = useState({
-    search: "",
-    type: "all",
-    category: "all",
-    month: "",
-  });
+  const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState(null);
 
@@ -33,30 +38,34 @@ export default function Transactions() {
     return <Loader label="Loading transactions..." />;
   }
 
-  const filteredTransactions = transactions.filter((transaction) => {
-    if (
-      filters.search &&
-      !`${transaction.title} ${transaction.notes}`
-        .toLowerCase()
-        .includes(filters.search.toLowerCase())
-    ) {
-      return false;
-    }
+  const filteredTransactions = useMemo(
+    () =>
+      transactions.filter((transaction) => {
+        if (
+          filters.search &&
+          !`${transaction.title} ${transaction.notes}`
+            .toLowerCase()
+            .includes(filters.search.toLowerCase())
+        ) {
+          return false;
+        }
 
-    if (filters.type !== "all" && transaction.type !== filters.type) {
-      return false;
-    }
+        if (filters.type !== "all" && transaction.type !== filters.type) {
+          return false;
+        }
 
-    if (filters.category !== "all" && transaction.category !== filters.category) {
-      return false;
-    }
+        if (filters.category !== "all" && transaction.category !== filters.category) {
+          return false;
+        }
 
-    if (filters.month && !transaction.date.startsWith(filters.month)) {
-      return false;
-    }
+        if (filters.month && !transaction.date.startsWith(filters.month)) {
+          return false;
+        }
 
-    return true;
-  });
+        return true;
+      }),
+    [filters, transactions]
+  );
 
   function openCreateModal() {
     if (isReadOnly) {
@@ -98,9 +107,7 @@ export default function Transactions() {
       return;
     }
 
-    const shouldDelete = window.confirm(
-      "Delete this transaction? This cannot be undone."
-    );
+    const shouldDelete = window.confirm("Delete this transaction? This cannot be undone.");
 
     if (!shouldDelete) {
       return;
@@ -114,46 +121,39 @@ export default function Transactions() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="page-stack">
       <PageHeader
-        eyebrow="Money movement"
-        title="Transactions"
-        description="Capture income and expenses, then filter the ledger by type, category, or month."
+        eyebrow="Transactions"
+        title="Transaction ledger"
+        description="Add, filter, and manage income or expense records."
         actions={
           <Button disabled={isReadOnly} onClick={openCreateModal} title={readOnlyMessage}>
+            <Plus className="h-4 w-4" />
             Add transaction
           </Button>
         }
       />
 
       {isReadOnly ? (
-        <div className="surface-card border-amber-300/80 bg-amber-50/80 p-4 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+        <StatusBanner tone="warning" title="Read-only mode">
           {readOnlyMessage}
-        </div>
+        </StatusBanner>
       ) : null}
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="surface-card p-5">
-          <p className="text-sm text-slate-500 dark:text-slate-400">Total records</p>
-          <p className="mt-2 text-3xl font-semibold text-slate-950 dark:text-white">
-            {transactions.length}
-          </p>
-        </div>
-        <div className="surface-card p-5">
-          <p className="text-sm text-slate-500 dark:text-slate-400">Filtered view</p>
-          <p className="mt-2 text-3xl font-semibold text-slate-950 dark:text-white">
-            {filteredTransactions.length}
-          </p>
-        </div>
-        <div className="surface-card p-5">
-          <p className="text-sm text-slate-500 dark:text-slate-400">Default month</p>
-          <p className="mt-2 text-3xl font-semibold text-slate-950 dark:text-white">
-            {getMonthKey()}
-          </p>
-        </div>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <StatTile caption="Total records" value={transactions.length} />
+        <StatTile caption="Filtered records" value={filteredTransactions.length} />
+        <StatTile caption="Current month key" value={getMonthKey()} helper="Format: YYYY-MM" />
       </div>
 
-      <div className="surface-card p-6">
+      <div className="surface-card p-4 sm:p-5">
+        <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-lg font-semibold text-slate-950 dark:text-white">Filters</h2>
+          <Button variant="ghost" size="sm" onClick={() => setFilters(DEFAULT_FILTERS)}>
+            <Eraser className="h-4 w-4" />
+            Clear filters
+          </Button>
+        </div>
         <TransactionFilters
           filters={filters}
           onChange={(field, value) =>
@@ -167,14 +167,14 @@ export default function Transactions() {
 
       {filteredTransactions.length === 0 ? (
         <EmptyState
-          eyebrow="Ledger is quiet"
-          title="No transactions match this view"
+          eyebrow="No records"
+          title="No transactions in this view"
           message={
             transactions.length === 0
               ? isReadOnly
-                ? "Your guest workspace is read-only. Create an account to add your first transaction."
-                : "Start with your first income or expense and the ledger will populate here."
-              : "Adjust your filters or clear the search term to reveal more records."
+                ? "Guest workspace is read-only. Create an account to add your first transaction."
+                : "Add your first income or expense to start building your ledger."
+              : "Try different filters or clear your search to show more records."
           }
           action={transactions.length === 0 ? openCreateModal : undefined}
           actionDisabled={transactions.length === 0 ? isReadOnly : false}
@@ -198,7 +198,7 @@ export default function Transactions() {
           setEditingTransaction(null);
         }}
         title={editingTransaction ? "Edit transaction" : "Add transaction"}
-        description="Keep the ledger tidy with clear categories and precise amounts."
+        description="Use clear titles and categories for better reporting."
       >
         <TransactionForm
           disabled={isReadOnly}
@@ -214,3 +214,4 @@ export default function Transactions() {
     </div>
   );
 }
+

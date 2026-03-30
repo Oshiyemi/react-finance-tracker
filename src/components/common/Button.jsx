@@ -15,9 +15,9 @@ const variants = {
 };
 
 const sizes = {
-  sm: "px-3 py-2 text-sm",
-  md: "px-3.5 py-2.5 text-sm",
-  lg: "px-4 py-3 text-sm",
+  sm: "px-3 py-1.5 text-sm",
+  md: "px-3.5 py-2 text-sm",
+  lg: "px-4 py-2.5 text-sm",
   icon: "h-10 w-10 p-0",
 };
 
@@ -39,10 +39,16 @@ export default function Button({
         sizes[size],
         className
       )}
+      aria-busy={loading || undefined}
       disabled={loading || props.disabled}
       {...props}
     >
-      {loading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}
+      {loading ? (
+        <>
+          <LoaderCircle className="h-4 w-4 animate-spin" />
+          <span className="sr-only">Loading</span>
+        </>
+      ) : null}
       {children}
     </button>
   );

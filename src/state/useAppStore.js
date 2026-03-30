@@ -15,6 +15,13 @@ import {
   saveAppData,
 } from "@/services/storage";
 import { useAuthStore } from "@/state/useAuthStore";
+import {
+  normalizeDateValue,
+  normalizeMonthValue,
+  normalizeMultilineText,
+  normalizeText,
+  toPositiveAmount,
+} from "@/utils/validators";
 
 const AppContext = createContext(null);
 
@@ -31,8 +38,90 @@ function createEmptyState() {
  */
 function sortTransactions(transactions) {
   return [...transactions].sort(
-    (left, right) => new Date(right.date) - new Date(left.date)
+    (left, right) => {
+      const leftTime = new Date(left.date).getTime();
+      const rightTime = new Date(right.date).getTime();
+      return (Number.isNaN(rightTime) ? 0 : rightTime) - (Number.isNaN(leftTime) ? 0 : leftTime);
+    }
   );
+}
+
+/**
+ * @param {any} payload
+ * @returns {{ ok: boolean, data?: { title: string, amount: number, category: string, date: string, type: "income" | "expense", notes: string }, message?: string }}
+ */
+function normalizeTransactionPayload(payload) {
+  const title = normalizeText(payload?.title, { maxLength: 120 });
+  const amount = toPositiveAmount(payload?.amount);
+  const category = normalizeText(payload?.category, { maxLength: 60 });
+  const date = normalizeDateValue(payload?.date);
+  const notes = normalizeMultilineText(payload?.notes, { maxLength: 1000 });
+  const type = payload?.type === "income" ? "income" : payload?.type === "expense" ? "expense" : "";
+
+  if (!title) {
+    return { ok: false, message: "A transaction title is required." };
+  }
+
+  if (amount === null) {
+    return { ok: false, message: "Amount must be a positive number." };
+  }
+
+  if (!category) {
+    return { ok: false, message: "Select a category." };
+  }
+
+  if (!date) {
+    return { ok: false, message: "Choose a valid date." };
+  }
+
+  if (!type) {
+    return { ok: false, message: "Choose income or expense." };
+  }
+
+  return {
+    ok: true,
+    data: {
+      title,
+      amount,
+      category,
+      date,
+      type,
+      notes,
+    },
+  };
+}
+
+/**
+ * @param {any} payload
+ * @returns {{ ok: boolean, data?: { category: string, month: string, monthlyLimit: number, notes: string }, message?: string }}
+ */
+function normalizeBudgetPayload(payload) {
+  const category = normalizeText(payload?.category, { maxLength: 60 });
+  const month = normalizeMonthValue(payload?.month);
+  const monthlyLimit = toPositiveAmount(payload?.monthlyLimit);
+  const notes = normalizeMultilineText(payload?.notes, { maxLength: 1000 });
+
+  if (!category) {
+    return { ok: false, message: "Pick a category." };
+  }
+
+  if (!month) {
+    return { ok: false, message: "Choose a valid month." };
+  }
+
+  if (monthlyLimit === null) {
+    return { ok: false, message: "Budget must be a positive number." };
+  }
+
+  return {
+    ok: true,
+    data: {
+      category,
+      month,
+      monthlyLimit,
+      notes,
+    },
+  };
 }
 
 export function AppStoreProvider({ children }) {
@@ -116,15 +205,21 @@ export function AppStoreProvider({ children }) {
       return blocked;
     }
 
+    const normalized = normalizeTransactionPayload(payload);
+
+    if (!normalized.ok) {
+      return normalized;
+    }
+
     const timestamp = new Date().toISOString();
     const transaction = {
       id: crypto.randomUUID(),
-      title: payload.title.trim(),
-      amount: Number(payload.amount),
-      category: payload.category,
-      date: payload.date,
-      type: payload.type,
-      notes: payload.notes?.trim() || "",
+      title: normalized.data.title,
+      amount: normalized.data.amount,
+      category: normalized.data.category,
+      date: normalized.data.date,
+      type: normalized.data.type,
+      notes: normalized.data.notes,
       createdAt: timestamp,
       updatedAt: timestamp,
     };
@@ -143,6 +238,22 @@ export function AppStoreProvider({ children }) {
     if (blocked) {
       return blocked;
     }
+    const existingTransaction = appState.transactions.find(
+      (transaction) => transaction.id === transactionId
+    );
+
+    if (!existingTransaction) {
+      return { ok: false, message: "Transaction was not found." };
+    }
+
+    const normalized = normalizeTransactionPayload({
+      ...existingTransaction,
+      ...payload,
+    });
+
+    if (!normalized.ok) {
+      return normalized;
+    }
 
     setAppState((currentState) => ({
       ...currentState,
@@ -151,8 +262,7 @@ export function AppStoreProvider({ children }) {
           transaction.id === transactionId
             ? {
                 ...transaction,
-                ...payload,
-                amount: Number(payload.amount),
+                ...normalized.data,
                 updatedAt: new Date().toISOString(),
               }
             : transaction
@@ -187,13 +297,19 @@ export function AppStoreProvider({ children }) {
       return blocked;
     }
 
+    const normalized = normalizeBudgetPayload(payload);
+
+    if (!normalized.ok) {
+      return normalized;
+    }
+
     const timestamp = new Date().toISOString();
     const budget = {
       id: budgetId || crypto.randomUUID(),
-      category: payload.category,
-      month: payload.month,
-      monthlyLimit: Number(payload.monthlyLimit),
-      notes: payload.notes?.trim() || "",
+      category: normalized.data.category,
+      month: normalized.data.month,
+      monthlyLimit: normalized.data.monthlyLimit,
+      notes: normalized.data.notes,
       createdAt: timestamp,
       updatedAt: timestamp,
     };
@@ -261,7 +377,8 @@ export function AppStoreProvider({ children }) {
       upsertBudget,
       deleteBudget,
       clearWorkspace,
-      exportWorkspace: () => exportNamespaceData(loadedNamespace),
+      exportWorkspace: () =>
+        exportNamespaceData(loadedNamespace || getStorageNamespace(session)),
     }),
     [appState, isReady, loadedNamespace, guestLockReason, isGuest, isGuestLocked, session]
   );

@@ -32,6 +32,8 @@ FinTrack Wealth is a Vite + React personal finance tracker rebuilt around a clea
 |   |   |-- new-logo-light.png
 |   |   `-- new-logo-dark.png
 |   |-- components
+|   |   |-- auth
+|   |   |   `-- AuthFrame.jsx
 |   |   |-- budgets
 |   |   |   |-- BudgetForm.jsx
 |   |   |   `-- BudgetSummaryCard.jsx
@@ -48,10 +50,14 @@ FinTrack Wealth is a Vite + React personal finance tracker rebuilt around a clea
 |   |   |   |-- MetricCard.jsx
 |   |   |   |-- Modal.jsx
 |   |   |   |-- Navbar.jsx
+|   |   |   |-- StatTile.jsx
+|   |   |   |-- StatusBanner.jsx
 |   |   |   |-- ThemedLogo.jsx
 |   |   |   `-- PageHeader.jsx
 |   |   |-- dashboard
 |   |   |   `-- RecentTransactions.jsx
+|   |   |-- tutorial
+|   |   |   `-- AppTutorialModal.jsx
 |   |   `-- transactions
 |   |       |-- TransactionFilters.jsx
 |   |       |-- TransactionForm.jsx
@@ -129,6 +135,8 @@ Supported variables:
 - Added a 7-day guest trial with expiry lock and read-only fallback.
 - Added guest-to-account data migration on signup with retry-safe recovery.
 - Hardened local auth with PBKDF2 password hashing and client-side login throttling.
+- Added a compact 7-step onboarding tutorial modal with persistent skip/finish state.
+- Improved accessibility semantics across forms, navigation, modals, and focus behavior.
 
 ## Auth Model
 
@@ -173,7 +181,7 @@ Legacy handling:
 - Choosing `Continue as Guest` opens the guest workspace immediately.
 - Guest access expires exactly 7 days after guest session creation.
 - After expiry, write actions are blocked (add/edit/delete/clear) and the app enters read-only guest mode.
-- The app shows an expiry banner + modal prompt: `Guest access ended — create an account to keep your data.`
+- The app shows an expiry banner and modal prompt when guest editing ends.
 - On signup, guest data is migrated into the new account workspace and the guest session is marked migrated.
 - Migration is idempotent for retries and includes a recovery path if the first attempt fails.
 
@@ -183,6 +191,8 @@ Legacy handling:
 - Legacy SHA-256 account hashes are upgraded to PBKDF2 on successful login.
 - Login attempts are rate-limited locally per email within a rolling time window.
 - All localStorage reads use safe JSON parsing fallbacks to avoid crashes from malformed data.
+- Session/account/workspace records are normalized before use to reduce corruption-related crashes.
+- Password digest checks use a constant-time style string comparison in-browser.
 - This project has no server, so server-side auth hardening (httpOnly cookies, API rate-limit middleware, DB row-level security) is not present in this frontend-only build.
 
 ## Feature Notes

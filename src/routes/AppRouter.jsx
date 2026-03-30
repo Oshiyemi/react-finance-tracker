@@ -8,6 +8,7 @@ import Transactions from "@/pages/Transactions";
 import AuthLanding from "@/pages/auth/AuthLanding";
 import Login from "@/pages/auth/Login";
 import Register from "@/pages/auth/Register";
+import Loader from "@/components/common/Loader";
 import ProtectedRoute from "@/routes/ProtectedRoute";
 import { useAuthStore } from "@/state/useAuthStore";
 
@@ -15,7 +16,7 @@ function RootRedirect() {
   const { hasSession, isReady } = useAuthStore();
 
   if (!isReady) {
-    return null;
+    return <Loader label="Restoring your session..." />;
   }
 
   return <Navigate replace to={hasSession ? "/dashboard" : "/auth"} />;

@@ -1,9 +1,12 @@
-import { useState } from "react";
+﻿import { useState } from "react";
+import { CalendarDays, Plus } from "lucide-react";
 import Button from "@/components/common/Button";
 import EmptyState from "@/components/common/EmptyState";
 import Loader from "@/components/common/Loader";
 import Modal from "@/components/common/Modal";
 import PageHeader from "@/components/common/PageHeader";
+import StatTile from "@/components/common/StatTile";
+import StatusBanner from "@/components/common/StatusBanner";
 import BudgetForm from "@/components/budgets/BudgetForm";
 import BudgetSummaryCard from "@/components/budgets/BudgetSummaryCard";
 import { useAppStore } from "@/state/useAppStore";
@@ -108,20 +111,23 @@ export default function Budgets() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="page-stack">
       <PageHeader
-        eyebrow="Monthly guardrails"
-        title="Budgets"
-        description="Set category limits for each month and compare them against your actual expense activity."
+        eyebrow="Budgets"
+        title="Monthly budget planner"
+        description="Set category spending limits and monitor progress against real transactions."
         actions={
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-2">
             <input
+              id="budget-month-selector"
+              aria-label="Select month"
               type="month"
+              className="field-shell h-10 min-w-[11rem]"
               value={selectedMonth}
               onChange={(event) => setSelectedMonth(event.target.value)}
-              className="field-shell h-11 min-w-[11rem]"
             />
             <Button disabled={isReadOnly} onClick={openCreateModal} title={readOnlyMessage}>
+              <Plus className="h-4 w-4" />
               Add budget
             </Button>
           </div>
@@ -129,49 +135,34 @@ export default function Budgets() {
       />
 
       {isReadOnly ? (
-        <div className="surface-card border-amber-300/80 bg-amber-50/80 p-4 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+        <StatusBanner tone="warning" title="Read-only mode">
           {readOnlyMessage}
-        </div>
+        </StatusBanner>
       ) : null}
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <div className="surface-card p-5">
-          <p className="text-sm text-slate-500 dark:text-slate-400">Month</p>
-          <p className="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">
-            {formatMonthLabel(selectedMonth)}
-          </p>
-        </div>
-        <div className="surface-card p-5">
-          <p className="text-sm text-slate-500 dark:text-slate-400">Budgeted</p>
-          <p className="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">
-            {formatCurrency(totalBudgeted)}
-          </p>
-        </div>
-        <div className="surface-card p-5">
-          <p className="text-sm text-slate-500 dark:text-slate-400">Spent</p>
-          <p className="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">
-            {formatCurrency(totalSpent)}
-          </p>
-        </div>
-        <div className="surface-card p-5">
-          <p className="text-sm text-slate-500 dark:text-slate-400">Categories over limit</p>
-          <p className="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">
-            {exceededCount}
-          </p>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Remaining: {formatCurrency(totalRemaining)}
-          </p>
-        </div>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatTile
+          caption="Month"
+          value={formatMonthLabel(selectedMonth)}
+          helper={<span className="inline-flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5" />Current selection</span>}
+        />
+        <StatTile caption="Budgeted" value={formatCurrency(totalBudgeted)} />
+        <StatTile caption="Spent" value={formatCurrency(totalSpent)} />
+        <StatTile
+          caption="Over limit"
+          value={exceededCount}
+          helper={`Remaining ${formatCurrency(totalRemaining)}`}
+        />
       </div>
 
       {budgetSummaries.length === 0 ? (
         <EmptyState
-          eyebrow="Budget board is empty"
+          eyebrow="No budgets"
           title={`No budgets for ${formatMonthLabel(selectedMonth)}`}
           message={
             isReadOnly
-              ? "Your guest workspace is read-only. Create an account to add budgets and keep planning."
-              : "Create category budgets to see remaining spend, warnings, and progress bars for the month."
+              ? "Guest workspace is read-only. Create an account to add and update budgets."
+              : "Create category budgets to track remaining spend and over-budget alerts."
           }
           action={openCreateModal}
           actionDisabled={isReadOnly}
@@ -179,7 +170,7 @@ export default function Budgets() {
           actionLabel="Add monthly budget"
         />
       ) : (
-        <div className="grid gap-5">
+        <div className="grid gap-4">
           {budgetSummaries.map(({ budget, usage }) => (
             <BudgetSummaryCard
               key={budget.id}
@@ -201,7 +192,7 @@ export default function Budgets() {
           setEditingBudget(null);
         }}
         title={editingBudget ? "Edit budget" : "Add budget"}
-        description="Budgets are tracked by category and month. Expense transactions update the spend figure automatically."
+        description="Budgets are grouped by month and expense category."
       >
         <BudgetForm
           budget={editingBudget}
@@ -218,3 +209,4 @@ export default function Budgets() {
     </div>
   );
 }
+

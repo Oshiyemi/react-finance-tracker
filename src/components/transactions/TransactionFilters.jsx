@@ -1,11 +1,11 @@
 import Input from "@/components/common/Input";
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "@/utils/constants";
 
-const categories = [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES];
+const categories = Array.from(new Set([...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES]));
 
 export default function TransactionFilters({ filters, onChange }) {
   return (
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       <Input
         id="transaction-search"
         label="Search"

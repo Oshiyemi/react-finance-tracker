@@ -11,17 +11,20 @@
 @layer base {
   html {
     min-height: 100%;
+    scroll-behavior: smooth;
   }
 
   body {
-    min-height: 100vh;
+    min-height: 100dvh;
     background:
       radial-gradient(circle at top, rgba(16, 185, 129, 0.16), transparent 34%),
       radial-gradient(circle at bottom right, rgba(245, 158, 11, 0.18), transparent 28%),
       #f6fbf7;
     color: #0f172a;
     font-family: var(--font-sans);
+    line-height: 1.5;
     text-rendering: optimizeLegibility;
+    overflow-x: clip;
   }
 
   body.dark,
@@ -55,16 +58,29 @@
   }
 
   #root {
-    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  :focus-visible {
+    outline: 2px solid rgba(16, 185, 129, 0.9);
+    outline-offset: 2px;
   }
 }
 
 @layer components {
   .surface-card {
-    @apply rounded-[2rem] border border-white/50 bg-white/70 shadow-xl shadow-emerald-900/5 backdrop-blur-xl transition duration-200 dark:border-white/10 dark:bg-slate-950/70 dark:shadow-slate-950/20;
+    @apply rounded-2xl border border-white/60 bg-white/75 shadow-lg shadow-emerald-900/5 backdrop-blur-xl transition duration-200 dark:border-white/10 dark:bg-slate-950/70 dark:shadow-slate-950/20;
   }
 
   .field-shell {
-    @apply w-full rounded-2xl border border-emerald-200/80 bg-white/90 px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 dark:border-emerald-900/70 dark:bg-slate-950/80 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-emerald-700 dark:focus:ring-emerald-950/70;
+    @apply w-full rounded-xl border border-emerald-200/80 bg-white/90 px-3.5 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 dark:border-emerald-900/70 dark:bg-slate-950/80 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-emerald-700 dark:focus:ring-emerald-950/70;
+  }
+
+  .page-stack {
+    @apply space-y-6 lg:space-y-8;
+  }
+
+  .section-subtitle {
+    @apply text-sm text-slate-500 dark:text-slate-400;
   }
 }

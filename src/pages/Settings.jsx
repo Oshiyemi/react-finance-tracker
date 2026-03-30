@@ -1,9 +1,19 @@
-import { Download, LogOut, Palette, ShieldCheck, Trash2 } from "lucide-react";
+﻿import {
+  CircleHelp,
+  Download,
+  LogOut,
+  Palette,
+  ShieldCheck,
+  Trash2,
+} from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import Button from "@/components/common/Button";
 import Card from "@/components/common/Card";
 import Loader from "@/components/common/Loader";
 import PageHeader from "@/components/common/PageHeader";
+import StatTile from "@/components/common/StatTile";
+import StatusBanner from "@/components/common/StatusBanner";
+import { TUTORIAL_OPEN_EVENT } from "@/components/tutorial/AppTutorialModal";
 import { useAuthStore } from "@/state/useAuthStore";
 import { useAppStore } from "@/state/useAppStore";
 import { STORAGE_SCHEMA_VERSION } from "@/utils/constants";
@@ -49,7 +59,7 @@ export default function Settings() {
 
   function handleClearWorkspace() {
     const shouldClear = window.confirm(
-      "Clear all transactions and budgets in the current workspace?"
+      "Clear all transactions and budgets in the current workspace? This cannot be undone."
     );
 
     if (shouldClear) {
@@ -71,78 +81,68 @@ export default function Settings() {
     navigate("/auth");
   }
 
+  function handleOpenTutorial() {
+    window.dispatchEvent(new CustomEvent(TUTORIAL_OPEN_EVENT));
+  }
+
   return (
-    <div className="space-y-8">
+    <div className="page-stack">
       <PageHeader
-        eyebrow="Control room"
-        title="Settings"
-        description="Review how auth works in this refactor, inspect the active storage namespace, and manage exported data."
+        eyebrow="Settings"
+        title="Workspace and privacy"
+        description="Manage theme, local data, exports, and account mode details."
       />
 
       {isReadOnly ? (
-        <div className="surface-card border-amber-300/80 bg-amber-50/80 p-4 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+        <StatusBanner tone="warning" title="Read-only mode">
           {readOnlyMessage}
-        </div>
+        </StatusBanner>
       ) : null}
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      {hasPendingGuestMigration ? (
+        <StatusBanner
+          tone="warning"
+          title="Guest migration pending"
+          action={
+            <Button loading={isAuthLoading} onClick={handleRetryMigration} size="sm">
+              Retry migration
+            </Button>
+          }
+        >
+          {pendingGuestMigration?.lastError || "A previous migration attempt did not complete."}
+        </StatusBanner>
+      ) : null}
+
+      <div className="grid gap-5 lg:grid-cols-2">
         <Card tone="highlight">
-          <div className="space-y-5">
+          <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
                 <ShieldCheck className="h-5 w-5" />
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-slate-950 dark:text-white">
-                  Session and auth
-                </h2>
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                  This implementation uses local auth only. Account and guest modes
-                  are stored separately inside browser localStorage.
-                </p>
+                <h2 className="text-lg font-semibold text-slate-950 dark:text-white">Session</h2>
+                <p className="section-subtitle">Local browser authentication only.</p>
               </div>
             </div>
 
-            {hasPendingGuestMigration ? (
-              <div className="rounded-[1.5rem] border border-amber-300/80 bg-amber-50/80 p-4 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
-                <p className="font-semibold">Guest data migration is pending</p>
-                <p className="mt-1">
-                  {pendingGuestMigration?.lastError || "A previous migration attempt did not complete."}
-                </p>
-                <div className="mt-3">
-                  <Button loading={isAuthLoading} onClick={handleRetryMigration} size="sm">
-                    Retry migration
-                  </Button>
-                </div>
-              </div>
-            ) : null}
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="rounded-[1.5rem] bg-white/70 p-4 dark:bg-slate-950/60">
-                <p className="text-sm text-slate-500 dark:text-slate-400">Mode</p>
-                <p className="mt-2 text-xl font-semibold text-slate-950 dark:text-white">
-                  {isGuest ? "Guest" : "Account"}
-                </p>
-              </div>
-              <div className="rounded-[1.5rem] bg-white/70 p-4 dark:bg-slate-950/60">
-                <p className="text-sm text-slate-500 dark:text-slate-400">Identity</p>
-                <p className="mt-2 text-xl font-semibold text-slate-950 dark:text-white">
-                  {session?.name}
-                </p>
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                  {session?.email || "No email in guest mode"}
-                </p>
-              </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <StatTile caption="Mode" value={isGuest ? "Guest" : "Account"} />
+              <StatTile
+                caption="Identity"
+                value={session?.name || "Unknown"}
+                helper={session?.email || "No email in guest mode"}
+              />
             </div>
 
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-2">
               {isGuest ? (
                 <>
                   <Link to="/auth/register">
                     <Button>Create account</Button>
                   </Link>
                   <Link to="/auth/login">
-                    <Button variant="outline">Switch to account</Button>
+                    <Button variant="outline">Login</Button>
                   </Link>
                 </>
               ) : (
@@ -156,76 +156,52 @@ export default function Settings() {
         </Card>
 
         <Card>
-          <div className="space-y-5">
+          <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-400/20 text-amber-700 dark:bg-amber-400/10 dark:text-amber-300">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-400/20 text-amber-700 dark:bg-amber-400/10 dark:text-amber-300">
                 <Palette className="h-5 w-5" />
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-slate-950 dark:text-white">
-                  Appearance
-                </h2>
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                  Dark mode is class-based and stored in localStorage so your
-                  preference persists.
-                </p>
+                <h2 className="text-lg font-semibold text-slate-950 dark:text-white">Appearance and help</h2>
+                <p className="section-subtitle">Theme and onboarding controls.</p>
               </div>
             </div>
 
-            <div className="rounded-[1.5rem] bg-white/70 p-4 dark:bg-slate-950/60">
-              <p className="text-sm text-slate-500 dark:text-slate-400">Current theme</p>
-              <p className="mt-2 text-xl font-semibold text-slate-950 dark:text-white">
-                {theme === "dark" ? "Dark" : "Light"}
-              </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <StatTile caption="Current theme" value={theme === "dark" ? "Dark" : "Light"} />
+              <StatTile caption="Tutorial" value="7-step quick tour" helper="Available anytime" />
             </div>
 
-            <Button variant="outline" onClick={toggleTheme}>
-              Toggle theme
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" onClick={toggleTheme}>
+                Toggle theme
+              </Button>
+              <Button variant="outline" onClick={handleOpenTutorial}>
+                <CircleHelp className="h-4 w-4" />
+                Open tutorial
+              </Button>
+            </div>
           </div>
         </Card>
       </div>
 
       <Card tone="highlight">
-        <div className="space-y-5">
+        <div className="space-y-4">
           <div>
-            <h2 className="text-xl font-semibold text-slate-950 dark:text-white">
-              Workspace storage
-            </h2>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              Transactions and budgets are namespaced so guest data and account
-              data remain separate.
+            <h2 className="text-lg font-semibold text-slate-950 dark:text-white">Workspace data</h2>
+            <p className="section-subtitle">
+              Guest and account data are isolated in localStorage namespaces.
             </p>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <div className="rounded-[1.5rem] bg-white/70 p-4 dark:bg-slate-950/60">
-              <p className="text-sm text-slate-500 dark:text-slate-400">Schema version</p>
-              <p className="mt-2 text-xl font-semibold text-slate-950 dark:text-white">
-                {STORAGE_SCHEMA_VERSION}
-              </p>
-            </div>
-            <div className="rounded-[1.5rem] bg-white/70 p-4 dark:bg-slate-950/60">
-              <p className="text-sm text-slate-500 dark:text-slate-400">Namespace</p>
-              <p className="mt-2 text-xl font-semibold text-slate-950 dark:text-white">
-                {storageLabel || "No workspace"}
-              </p>
-            </div>
-            <div className="rounded-[1.5rem] bg-white/70 p-4 dark:bg-slate-950/60">
-              <p className="text-sm text-slate-500 dark:text-slate-400">Transactions</p>
-              <p className="mt-2 text-xl font-semibold text-slate-950 dark:text-white">
-                {transactions.length}
-              </p>
-            </div>
-            <div className="rounded-[1.5rem] bg-white/70 p-4 dark:bg-slate-950/60">
-              <p className="text-sm text-slate-500 dark:text-slate-400">Budgets</p>
-              <p className="mt-2 text-xl font-semibold text-slate-950 dark:text-white">
-                {budgets.length}
-              </p>
-            </div>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <StatTile caption="Schema" value={STORAGE_SCHEMA_VERSION} />
+            <StatTile caption="Namespace" value={storageLabel || "No workspace"} helper={storageNamespace || "guest"} />
+            <StatTile caption="Transactions" value={transactions.length} />
+            <StatTile caption="Budgets" value={budgets.length} />
           </div>
 
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={downloadWorkspace}>
               <Download className="h-4 w-4" />
               Export workspace JSON
@@ -237,11 +213,15 @@ export default function Settings() {
               title={readOnlyMessage}
             >
               <Trash2 className="h-4 w-4" />
-              Clear current workspace
+              Clear workspace
             </Button>
           </div>
         </div>
       </Card>
+
+      <StatusBanner tone="info" title="Security note">
+        This is a frontend-only local app. Data remains on this device and can be read by anyone with browser/profile access.
+      </StatusBanner>
     </div>
   );
 }

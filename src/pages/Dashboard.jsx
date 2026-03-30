@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import {
   CircleDollarSign,
   PiggyBank,
+  Plus,
   Target,
   TrendingDown,
   TrendingUp,
@@ -13,6 +14,8 @@ import Card from "@/components/common/Card";
 import Loader from "@/components/common/Loader";
 import MetricCard from "@/components/common/MetricCard";
 import PageHeader from "@/components/common/PageHeader";
+import StatTile from "@/components/common/StatTile";
+import StatusBanner from "@/components/common/StatusBanner";
 import RecentTransactions from "@/components/dashboard/RecentTransactions";
 import { useAuthStore } from "@/state/useAuthStore";
 import { useAppStore } from "@/state/useAppStore";
@@ -61,7 +64,7 @@ export default function Dashboard() {
       setMigrationNotice("Guest data was already linked to this account.");
     } else {
       setMigrationNotice(
-        `Migration complete: ${migration.migratedTransactions} transaction(s) and ${migration.migratedBudgets} budget(s) moved into your account.`
+        `Migration complete: ${migration.migratedTransactions} transaction(s) and ${migration.migratedBudgets} budget(s) imported.`
       );
     }
 
@@ -78,167 +81,131 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="page-stack">
       <PageHeader
-        eyebrow="Financial command center"
-        title="See the month before it sees you."
-        description={`Your ${formatMonthLabel(
-          currentMonth
-        )} position, current momentum, and the next pressure points on one page.`}
+        eyebrow="Overview"
+        title="Dashboard"
+        description={`Snapshot for ${formatMonthLabel(currentMonth)}.`}
         actions={
-          isGuest ? (
-            <Link to="/auth/register">
-              <Button>Create account</Button>
+          <div className="flex flex-wrap gap-2">
+            <Link to="/transactions">
+              <Button variant="outline">
+                <Plus className="h-4 w-4" />
+                Add transaction
+              </Button>
             </Link>
-          ) : null
+            <Link to="/budgets">
+              <Button>
+                <Target className="h-4 w-4" />
+                Manage budgets
+              </Button>
+            </Link>
+          </div>
         }
       />
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           icon={CircleDollarSign}
           label="Net balance"
           tone="emerald"
           value={formatCurrency(overallTotals.savings)}
-          change="All recorded income minus all recorded expenses."
+          change="All-time income minus expenses"
         />
         <MetricCard
           icon={TrendingUp}
           label="Income this month"
           tone="amber"
           value={formatCurrency(monthlyTotals.income)}
-          change="Cash inflow recorded in the selected month."
+          change="Recorded inflow"
         />
         <MetricCard
           icon={TrendingDown}
           label="Expenses this month"
           tone="rose"
           value={formatCurrency(monthlyTotals.expenses)}
-          change="Outflows for the current month."
+          change="Recorded outflow"
         />
         <MetricCard
           icon={Target}
           label="Budgets on track"
           tone="slate"
           value={`${budgetsOnTrack}/${currentBudgets.length || 0}`}
-          change="Budget categories currently within their monthly limit."
+          change="Within monthly limits"
         />
       </div>
 
       {migrationNotice ? (
-        <Card className="border-emerald-200/80 bg-emerald-50/70 dark:border-emerald-500/30 dark:bg-emerald-500/10">
-          <p className="text-sm font-medium text-emerald-900 dark:text-emerald-200">
-            {migrationNotice}
-          </p>
-        </Card>
+        <StatusBanner tone="success" title="Migration update">
+          {migrationNotice}
+        </StatusBanner>
       ) : null}
 
       {hasPendingGuestMigration ? (
-        <Card className="border-amber-300/80 bg-amber-50/80 dark:border-amber-500/30 dark:bg-amber-500/10">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700 dark:text-amber-300">
-                Migration recovery
-              </p>
-              <h2 className="mt-2 text-xl font-semibold text-slate-950 dark:text-white">
-                We still need to finish moving your guest data.
-              </h2>
-              <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                {pendingGuestMigration?.lastError || "A previous attempt did not complete."}
-              </p>
-            </div>
+        <StatusBanner
+          tone="warning"
+          title="Migration recovery needed"
+          action={
             <Button loading={isAuthLoading} onClick={handleRetryMigration}>
               Retry migration
             </Button>
-          </div>
-        </Card>
+          }
+        >
+          {pendingGuestMigration?.lastError || "A previous migration attempt did not complete."}
+        </StatusBanner>
       ) : null}
 
       {isGuest ? (
-        <Card tone="highlight">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-600 dark:text-amber-300">
-                Guest mode
-              </p>
-              <h2 className="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">
-                You are exploring in a local-only guest workspace.
-              </h2>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
-                {isGuestExpired
-                  ? "Guest access ended. You can still view data, but edits are disabled until you create an account or log in."
-                  : `Your data is stored in browser localStorage under a guest namespace. ${guestDaysRemaining} day(s) remain in your guest trial.`}
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <Link to="/auth/register">
-                <Button>Create account</Button>
-              </Link>
-              <Link to="/settings">
-                <Button variant="outline">View storage details</Button>
-              </Link>
-            </div>
-          </div>
-        </Card>
+        <StatusBanner
+          tone={isGuestExpired ? "warning" : "info"}
+          title={isGuestExpired ? "Guest mode is read-only" : "Guest mode is active"}
+          action={
+            <Link to="/auth/register">
+              <Button>Create account</Button>
+            </Link>
+          }
+        >
+          {isGuestExpired
+            ? "You can still view data, but edits are disabled until you create an account or log in."
+            : `${guestDaysRemaining} day(s) remaining in guest editing mode.`}
+        </StatusBanner>
       ) : null}
 
-      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+      <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
         <CategoryBreakdownChart
           data={getCategoryBreakdown(monthlyTransactions)}
           monthLabel={formatMonthLabel(currentMonth)}
-          title="Current month spend mix"
+          title="Expense mix"
         />
         <RecentTransactions transactions={getRecentTransactions(transactions)} />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_0.9fr]">
+      <div className="grid gap-5 lg:grid-cols-[1fr_0.95fr]">
         <Card tone="highlight">
-          <div className="space-y-5">
+          <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
                 <PiggyBank className="h-5 w-5" />
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-slate-950 dark:text-white">
-                  Savings pulse
-                </h2>
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                  Track how much income survives your current spending pattern.
-                </p>
+                <h2 className="text-lg font-semibold text-slate-950 dark:text-white">Savings pulse</h2>
+                <p className="section-subtitle">Track retained income quickly.</p>
               </div>
             </div>
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="rounded-[1.5rem] bg-white/70 p-4 dark:bg-slate-950/60">
-                <p className="text-sm text-slate-500 dark:text-slate-400">This month</p>
-                <p className="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">
-                  {formatCurrency(monthlyTotals.savings)}
-                </p>
-              </div>
-              <div className="rounded-[1.5rem] bg-white/70 p-4 dark:bg-slate-950/60">
-                <p className="text-sm text-slate-500 dark:text-slate-400">All time income</p>
-                <p className="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">
-                  {formatCurrency(overallTotals.income)}
-                </p>
-              </div>
-              <div className="rounded-[1.5rem] bg-white/70 p-4 dark:bg-slate-950/60">
-                <p className="text-sm text-slate-500 dark:text-slate-400">All time expenses</p>
-                <p className="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">
-                  {formatCurrency(overallTotals.expenses)}
-                </p>
-              </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <StatTile caption="This month" value={formatCurrency(monthlyTotals.savings)} />
+              <StatTile caption="All-time income" value={formatCurrency(overallTotals.income)} />
+              <StatTile caption="All-time expenses" value={formatCurrency(overallTotals.expenses)} />
             </div>
           </div>
         </Card>
 
         <Card>
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-slate-950 dark:text-white">
-              Budget watchlist
-            </h2>
+          <div className="space-y-3">
+            <h2 className="text-lg font-semibold text-slate-950 dark:text-white">Budget watchlist</h2>
             {currentBudgets.length === 0 ? (
-              <p className="text-sm leading-6 text-slate-500 dark:text-slate-400">
-                No budgets yet for {formatMonthLabel(currentMonth)}. Add one from the
-                budget page to start tracking remaining spend by category.
+              <p className="section-subtitle">
+                No budgets for {formatMonthLabel(currentMonth)} yet. Add one to track remaining spend.
               </p>
             ) : (
               currentBudgets.slice(0, 3).map((budget) => {
@@ -246,16 +213,13 @@ export default function Dashboard() {
                 return (
                   <div
                     key={budget.id}
-                    className="rounded-[1.5rem] border border-emerald-100/80 bg-white/70 p-4 dark:border-emerald-950/70 dark:bg-slate-950/60"
+                    className="rounded-xl border border-emerald-100/80 bg-white/70 p-4 dark:border-emerald-950/70 dark:bg-slate-950/60"
                   >
                     <div className="flex items-center justify-between gap-4">
                       <div>
-                        <p className="font-semibold text-slate-950 dark:text-white">
-                          {budget.category}
-                        </p>
+                        <p className="font-semibold text-slate-950 dark:text-white">{budget.category}</p>
                         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                          {formatCurrency(usage.spent)} spent of{" "}
-                          {formatCurrency(budget.monthlyLimit)}
+                          {formatCurrency(usage.spent)} of {formatCurrency(budget.monthlyLimit)}
                         </p>
                       </div>
                       <p
@@ -270,9 +234,7 @@ export default function Dashboard() {
                     </div>
                     <div className="mt-3 h-2 overflow-hidden rounded-full bg-emerald-100 dark:bg-emerald-950/60">
                       <div
-                        className={`h-full rounded-full ${
-                          usage.exceeded ? "bg-rose-500" : "bg-emerald-500"
-                        }`}
+                        className={`h-full rounded-full ${usage.exceeded ? "bg-rose-500" : "bg-emerald-500"}`}
                         style={{ width: `${usage.exceeded ? 100 : usage.progress}%` }}
                       />
                     </div>
@@ -286,3 +248,4 @@ export default function Dashboard() {
     </div>
   );
 }
+

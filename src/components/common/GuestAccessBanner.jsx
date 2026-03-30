@@ -34,16 +34,18 @@ export default function GuestAccessBanner() {
 
   const hasExpired = isGuestLocked && guestLockReason !== "migrated";
   const message = hasExpired
-    ? "Guest access ended \u2014 create an account to keep your data."
+    ? "Guest editing ended. Create an account to keep managing this data."
     : guestLockReason === "migrated"
-      ? "This guest session was already migrated. Sign in to your account to continue."
+      ? "This guest workspace was already migrated. Sign in to continue."
       : `Guest mode is active: ${formatGuestTimeLabel(guestDaysRemaining)}.`;
 
   return (
     <>
-      <div className="mt-4 w-full px-4 lg:px-6">
+      <div className="mt-3 w-full px-4 lg:px-6">
         <div className="mx-auto w-full max-w-7xl">
           <div
+            role={isGuestLocked ? "alert" : "status"}
+            aria-live={isGuestLocked ? "assertive" : "polite"}
             className={`mx-auto flex w-full max-w-6xl flex-col gap-3 rounded-2xl border px-4 py-3 transition-all duration-300 md:flex-row md:items-center md:justify-between ${
               isGuestLocked
                 ? "border-amber-300/80 bg-amber-50/90 dark:border-amber-500/40 dark:bg-amber-500/10"
@@ -83,7 +85,7 @@ export default function GuestAccessBanner() {
         isOpen={isModalOpen && hasExpired}
         onClose={() => setIsModalOpen(false)}
         title="Guest trial ended"
-        description="Guest access ended \u2014 create an account to keep your data."
+        description="Guest access is now read-only."
         footer={
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
             <Button variant="outline" onClick={() => setIsModalOpen(false)}>
@@ -96,8 +98,8 @@ export default function GuestAccessBanner() {
         }
       >
         <p className="text-sm leading-6 text-slate-500 dark:text-slate-400">
-          You can still review your guest data, but editing, adding, and deleting are now
-          disabled. Sign up or log in to keep managing your finances.
+          You can still review this workspace, but edits are disabled until you log in
+          or create an account.
         </p>
       </Modal>
     </>

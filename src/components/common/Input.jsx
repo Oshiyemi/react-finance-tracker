@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { cn } from "@/utils/cn";
 
 export default function Input({
@@ -9,19 +10,38 @@ export default function Input({
   id,
   inputClassName,
   label,
+  optionalLabel,
+  required = false,
+  ariaDescribedBy,
   ...props
 }) {
   const Component = as;
+  const generatedId = useId();
+  const fieldId = id || `field-${generatedId}`;
+  const errorId = error ? `${fieldId}-error` : undefined;
+  const hintId = !error && hint ? `${fieldId}-hint` : undefined;
+  const describedBy = [ariaDescribedBy, errorId, hintId]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
 
   return (
-    <label className={cn("flex flex-col gap-2", className)} htmlFor={id}>
+    <label className={cn("flex flex-col gap-2", className)} htmlFor={fieldId}>
       {label ? (
         <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
           {label}
+          {optionalLabel ? (
+            <span className="ml-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+              ({optionalLabel})
+            </span>
+          ) : null}
         </span>
       ) : null}
       <Component
-        id={id}
+        id={fieldId}
+        required={required}
+        aria-invalid={Boolean(error) || undefined}
+        aria-describedby={describedBy || undefined}
         className={cn(
           "field-shell",
           error &&
@@ -33,9 +53,13 @@ export default function Input({
         {children}
       </Component>
       {error ? (
-        <span className="text-sm text-rose-600 dark:text-rose-300">{error}</span>
+        <span id={errorId} className="text-sm text-rose-700 dark:text-rose-300">
+          {error}
+        </span>
       ) : hint ? (
-        <span className="text-sm text-slate-500 dark:text-slate-400">{hint}</span>
+        <span id={hintId} className="text-sm text-slate-500 dark:text-slate-400">
+          {hint}
+        </span>
       ) : null}
     </label>
   );

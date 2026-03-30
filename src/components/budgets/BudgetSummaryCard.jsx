@@ -11,6 +11,13 @@ export default function BudgetSummaryCard({
   onEdit,
   usage,
 }) {
+  const rawProgress = usage.exceeded
+    ? budget.monthlyLimit > 0
+      ? (usage.spent / budget.monthlyLimit) * 100
+      : 100
+    : usage.progress;
+  const progressLabel = `${Math.round(rawProgress)}%`;
+
   return (
     <Card
       className={
@@ -20,11 +27,11 @@ export default function BudgetSummaryCard({
       }
       tone="highlight"
     >
-      <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-xl font-semibold text-slate-950 dark:text-white">
+              <h3 className="text-lg font-semibold text-slate-950 dark:text-white sm:text-xl">
                 {budget.category}
               </h3>
               {usage.exceeded ? (
@@ -48,6 +55,7 @@ export default function BudgetSummaryCard({
               size="sm"
               variant="outline"
               disabled={disabled}
+              aria-label={`Edit ${budget.category} budget`}
               title={disabled ? disabledMessage : "Edit budget"}
               onClick={() => onEdit(budget)}
             >
@@ -58,6 +66,7 @@ export default function BudgetSummaryCard({
               size="sm"
               variant="destructive"
               disabled={disabled}
+              aria-label={`Delete ${budget.category} budget`}
               title={disabled ? disabledMessage : "Delete budget"}
               onClick={() => onDelete(budget.id)}
             >
@@ -67,23 +76,23 @@ export default function BudgetSummaryCard({
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3">
-          <div className="rounded-[1.5rem] bg-white/70 p-4 dark:bg-slate-950/60">
+        <div className="grid gap-3 md:grid-cols-3">
+          <div className="rounded-xl bg-white/70 p-4 dark:bg-slate-950/60">
             <p className="text-sm text-slate-500 dark:text-slate-400">Monthly limit</p>
-            <p className="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">
+            <p className="mt-2 text-xl font-semibold text-slate-950 dark:text-white sm:text-2xl">
               {formatCurrency(budget.monthlyLimit)}
             </p>
           </div>
-          <div className="rounded-[1.5rem] bg-white/70 p-4 dark:bg-slate-950/60">
+          <div className="rounded-xl bg-white/70 p-4 dark:bg-slate-950/60">
             <p className="text-sm text-slate-500 dark:text-slate-400">Spent this month</p>
-            <p className="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">
+            <p className="mt-2 text-xl font-semibold text-slate-950 dark:text-white sm:text-2xl">
               {formatCurrency(usage.spent)}
             </p>
           </div>
-          <div className="rounded-[1.5rem] bg-white/70 p-4 dark:bg-slate-950/60">
+          <div className="rounded-xl bg-white/70 p-4 dark:bg-slate-950/60">
             <p className="text-sm text-slate-500 dark:text-slate-400">Remaining</p>
             <p
-              className={`mt-2 text-2xl font-semibold ${
+              className={`mt-2 text-xl font-semibold sm:text-2xl ${
                 usage.remaining < 0
                   ? "text-rose-600 dark:text-rose-300"
                   : "text-emerald-700 dark:text-emerald-300"
@@ -98,14 +107,17 @@ export default function BudgetSummaryCard({
           <div className="flex items-center justify-between text-sm">
             <span className="text-slate-500 dark:text-slate-400">Progress</span>
             <span className="font-semibold text-slate-950 dark:text-white">
-              {Math.round(
-                usage.exceeded ? (usage.spent / budget.monthlyLimit) * 100 : usage.progress
-              )}
-              %
+              {progressLabel}
+              {usage.exceeded ? " (Over budget)" : ""}
             </span>
           </div>
           <div className="h-3 overflow-hidden rounded-full bg-emerald-100 dark:bg-emerald-950/60">
             <div
+              role="progressbar"
+              aria-label={`${budget.category} budget usage`}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.max(0, Math.min(Math.round(rawProgress), 100))}
               className={`h-full rounded-full transition-all ${
                 usage.exceeded ? "bg-rose-500" : "bg-emerald-500"
               }`}

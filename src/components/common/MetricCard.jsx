@@ -19,23 +19,23 @@ export default function MetricCard({
   };
 
   return (
-    <Card tone="highlight">
+    <Card tone="highlight" padding="p-5">
       <div className="flex items-start justify-between gap-4">
-        <div className="space-y-3">
+        <div className="space-y-2">
           <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
             {label}
           </p>
-          <div className="text-3xl font-semibold tracking-tight text-slate-950 dark:text-white">
+          <div className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-3xl">
             {value}
           </div>
           {change ? (
-            <p className="text-sm text-slate-500 dark:text-slate-400">{change}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{change}</p>
           ) : null}
         </div>
         {Icon ? (
           <div
             className={cn(
-              "flex h-12 w-12 items-center justify-center rounded-2xl",
+              "flex h-10 w-10 items-center justify-center rounded-xl",
               tones[tone]
             )}
           >

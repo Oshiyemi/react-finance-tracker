@@ -12,11 +12,12 @@ export default function TransactionTable({
 }) {
   return (
     <Card>
-      <div className="space-y-3">
+      <div className="space-y-3" role="list" aria-label="Transactions">
         {transactions.map((transaction) => (
           <div
             key={transaction.id}
-            className="flex flex-col gap-4 rounded-[1.5rem] border border-emerald-100/80 bg-white/60 p-4 transition hover:border-emerald-200 hover:bg-white dark:border-emerald-950/70 dark:bg-slate-950/50 dark:hover:border-emerald-900 md:flex-row md:items-center md:justify-between"
+            role="listitem"
+            className="flex flex-col gap-4 rounded-xl border border-emerald-100/80 bg-white/60 p-4 transition hover:border-emerald-200 hover:bg-white dark:border-emerald-950/70 dark:bg-slate-950/50 dark:hover:border-emerald-900 md:flex-row md:items-center md:justify-between"
           >
             <div className="space-y-2">
               <div className="flex flex-wrap items-center gap-2">
@@ -33,7 +34,7 @@ export default function TransactionTable({
                   {transaction.type}
                 </span>
               </div>
-              <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500 dark:text-slate-400">
+              <div className="flex flex-wrap gap-x-4 gap-y-1 break-words text-sm text-slate-500 dark:text-slate-400">
                 <span>{transaction.category}</span>
                 <span>{formatTransactionDate(transaction.date)}</span>
                 {transaction.notes ? <span>{transaction.notes}</span> : null}
@@ -56,6 +57,7 @@ export default function TransactionTable({
                   variant="outline"
                   size="sm"
                   disabled={disabled}
+                  aria-label={`Edit ${transaction.title}`}
                   title={disabled ? disabledMessage : "Edit transaction"}
                   onClick={() => onEdit(transaction)}
                 >
@@ -66,6 +68,7 @@ export default function TransactionTable({
                   variant="destructive"
                   size="sm"
                   disabled={disabled}
+                  aria-label={`Delete ${transaction.title}`}
                   title={disabled ? disabledMessage : "Delete transaction"}
                   onClick={() => onDelete(transaction.id)}
                 >
